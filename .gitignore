@@ -105,3 +105,4 @@ venv.bak/
 
 /.vscode
 copy.bat
+test.py
