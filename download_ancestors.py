@@ -90,10 +90,12 @@ def setup_download(args):
     return {**url_info, **parameters}
 
 def setup_logging(args):
+    level = logging.WARNING
+    print(args.verbose)
     if args.verbose > 0:
-        level = logging.INFO
+        level = logging.DEBUG
         if args.verbose > 1:
-            level = logging.DEBUG
+            level = logging.INFO
     logging.basicConfig(format='%(levelname)s: %(message)s', level=level)
 
 def write_link(download_parameters):
