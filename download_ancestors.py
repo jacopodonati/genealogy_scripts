@@ -1,4 +1,5 @@
 from lxml import html
+from tqdm import tqdm
 from urllib.parse import urljoin
 from urllib.request import urlopen
 import argparse, errno, logging, os, requests, sys, urllib
@@ -109,12 +110,15 @@ def main():
     setup_logging(args)        
     logging.info('Setting up.')
     download_parameters = setup_download(args)
-    print('Downloading %s from %s(%s)' % (download_parameters['registry_type'], download_parameters['year'], download_parameters['registry_nr']))
 
     if not args.full_resolution:
         write_link(download_parameters)
+    
+    records = range(download_parameters['first'], download_parameters['last'] + 1, download_parameters['step'])
+    if args.verbose < 1:
+        records = tqdm(records, desc='{}, {} ({})'.format(download_parameters['registry_type'], download_parameters['year'], download_parameters['registry_nr']))
 
-    for i in range(download_parameters['first'], download_parameters['last'] + 1, download_parameters['step']):
+    for i in records:
         logging.info('Record no. {}.'.format(i))
         current_url = '/'.join([download_parameters['base_url'], download_parameters['filename_head'] + str(i).zfill(download_parameters['padding']) + download_parameters['filename_tail']])
         current_file = './' + '/'.join([download_parameters['city'], download_parameters['registry_type'], download_parameters['year'], download_parameters['registry_nr'], download_parameters['prefix'] + str(i).zfill(len(str(download_parameters['last']))) + '.jpg'])
@@ -133,9 +137,7 @@ def main():
         else:
             img = tree.xpath('//a[contains(@class, "cloud-zoom")]/img/@src')
             img_url = urljoin(download_parameters['root'], img[-1])
-        logging.debug('Image URL is {}.'.format(img_url))
-        print("Downloading %s/%s" % (str(i).zfill(len(str(download_parameters['last']))), download_parameters['last']), end='\n')
-        
+        logging.debug('Image URL is {}.'.format(img_url))        
         logging.info('Downloading the image.')
         img_file = urlopen(img_url)
         if not args.test_run:
@@ -149,8 +151,6 @@ def main():
             output = open(current_file, "wb")
             output.write(img_file.read())
             output.close()
-
-    print("Done.")
 
 if __name__ == "__main__":
     main()
