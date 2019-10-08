@@ -1,13 +1,15 @@
 from lxml import html
 from urllib.parse import urljoin
 from urllib.request import urlopen
-import argparse, errno, os, requests, sys, urllib
+import argparse, errno, logging, os, requests, sys, urllib
 
 def extract_info(args):
+    logging.info('Extracting info from URL.')
     # URL example:
     # http://www.antenati.san.beniculturali.it/v/Archivio+di+Stato+di+Forli/Stato+civile+italiano/Forliprovincia+di+Forli-Cesena/Matrimoni/1876/10/100546507_00301.jpg.html?g2_imageViewsIndex=0
     url = args.URL
     protocol = 'http://'
+    logging.debug('Protocol used is {}.'.format(protocol))
 
     # Anything after '?' is useless to us
     if '?' in url:
@@ -58,18 +60,23 @@ def setup_args():
     parser.add_argument('-t', '--test-run', action='store_true')
     parser.add_argument('-f', '--full-resolution', action='store_true')
     parser.add_argument('-i', '--inverse-order', action='store_true')
-    parser.add_argument('-v', '--verbose', action='store_true')
+    parser.add_argument('-v', '--verbose', action='count', default=0)
     parser.add_argument('URL')
     return parser.parse_args()
 
 def setup_download(args):
     url_info = extract_info(args)
+    logging.info('Setting up parameters.')
     parameters = dict()
     parameters['headers'] = { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11' }
+    logging.debug('User-Agent is {}.'.format(parameters['headers']))
+
     if args.full_resolution is True:
         parameters['prefix'] = '/'
     else:
         parameters['prefix'] = '/thumb_'
+    logging.debug('File prefix is {}.'.format(parameters['prefix']))
+
     if args.inverse_order is True:
         parametersons['step'] = -1
         parameters['first'] = url_info['last']
@@ -78,32 +85,46 @@ def setup_download(args):
         parameters['step'] = 1
         parameters['first'] = 1
         parameters['last'] = url_info['last']
+    logging.debug('First to download is record no. {}.  Last to download is record no. {}.'.format(parameters['first'], parameters['last']))
+
     return {**url_info, **parameters}
 
-def write_link():
+def setup_logging(args):
+    if args.verbose > 0:
+        level = logging.INFO
+        if args.verbose > 1:
+            level = logging.DEBUG
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=level)
+
+def write_link(download_parameters):
+    logging.info('Writing link file.')
     file_name = 'link.URL'
-##    link = open('.' + city + registry + year + registry_nr + prefix + file_name, 'wb', encoding='utf-8')
-##    link.write('[InternetShortcut]\nURL=' + full_url)
-##    link.close
+    # link = open('./' + '/'.join([download_parameters['city'], download_parameters['registry_type'], download_parameters['year'], download_parameters['registry_type']]), file_name, 'wb', encoding='utf-8')
+    # link.write('[InternetShortcut]\nURL=' + download_parameters['base_url'])
+    # link.close
 
 def main():
     args = setup_args()
+    setup_logging(args)        
+    logging.info('Setting up.')
     download_parameters = setup_download(args)
     print('Downloading %s from %s(%s)' % (download_parameters['registry_type'], download_parameters['year'], download_parameters['registry_nr']))
 
     if args.full_resolution is False:
-        write_link() # TODO
+        write_link(download_parameters)
 
     for i in range(download_parameters['first'], download_parameters['last'] + 1, download_parameters['step']):
+        logging.info('Record no. {}.'.format(i))
         current_url = '/'.join([download_parameters['base_url'], download_parameters['filename_head'] + str(i).zfill(download_parameters['padding']) + download_parameters['filename_tail']])
         current_file = './' + '/'.join([download_parameters['city'], download_parameters['registry_type'], download_parameters['year'], download_parameters['registry_type'], download_parameters['prefix'] + str(i).zfill(len(str(download_parameters['last']))) + '.jpg'])
+        logging.debug('Current URL: {}\nCurrent filename: {}.'.format(current_url, current_file))
         try:
-            if args.verbose is True:
-                print('Opening URL:', current_url)
+            logging.info('Downloading the page.')
             page = requests.get(current_url, headers=download_parameters['headers'])
         except requests.exceptions.RequestException as e:
             print(e)
             sys.exit(1)
+        logging.info('Parsing the page.')
         tree = html.fromstring(page.content)
         if args.full_resolution is True:
             img = tree.xpath('//a[contains(@class, "cloud-zoom")]/@href')
@@ -111,14 +132,13 @@ def main():
         else:
             img = tree.xpath('//a[contains(@class, "cloud-zoom")]/img/@src')
             img_url = urljoin(download_parameters['root'], img[-1])
+        logging.debug('Image URL is {}.'.format(img_url))
         print("Downloading %s/%s" % (str(i).zfill(len(str(download_parameters['last']))), download_parameters['last']), end='\n')
         
-        if args.verbose is True:
-            print('Opening image URL:', img_url)
+        logging.info('Downloading the image.')
         img_file = urlopen(img_url)
         if args.test_run is False:
-            if args.verbose is True:
-                print('Writing file', img_url)
+            logging.info('Writing the image on disk')
             if not os.path.exists(os.path.dirname(current_file)):
                 try:
                     os.makedirs(os.path.dirname(current_file))
