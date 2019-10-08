@@ -118,7 +118,7 @@ def main():
     for i in range(download_parameters['first'], download_parameters['last'] + 1, download_parameters['step']):
         logging.info('Record no. {}.'.format(i))
         current_url = '/'.join([download_parameters['base_url'], download_parameters['filename_head'] + str(i).zfill(download_parameters['padding']) + download_parameters['filename_tail']])
-        current_file = './' + '/'.join([download_parameters['city'], download_parameters['registry_type'], download_parameters['year'], download_parameters['registry_type'], download_parameters['prefix'] + str(i).zfill(len(str(download_parameters['last']))) + '.jpg'])
+        current_file = './' + '/'.join([download_parameters['city'], download_parameters['registry_type'], download_parameters['year'], download_parameters['registry_nr'], download_parameters['prefix'] + str(i).zfill(len(str(download_parameters['last']))) + '.jpg'])
         logging.debug('Current URL: {}\nCurrent filename: {}.'.format(current_url, current_file))
         try:
             logging.info('Downloading the page.')
