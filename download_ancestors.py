@@ -71,13 +71,13 @@ def setup_download(args):
     parameters['headers'] = { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11' }
     logging.debug('User-Agent is {}.'.format(parameters['headers']))
 
-    if args.full_resolution is True:
+    if args.full_resolution:
         parameters['prefix'] = '/'
     else:
         parameters['prefix'] = '/thumb_'
     logging.debug('File prefix is {}.'.format(parameters['prefix']))
 
-    if args.inverse_order is True:
+    if args.inverse_order:
         parametersons['step'] = -1
         parameters['first'] = url_info['last']
         parameters['last'] = 1
@@ -91,7 +91,6 @@ def setup_download(args):
 
 def setup_logging(args):
     level = logging.WARNING
-    print(args.verbose)
     if args.verbose > 0:
         level = logging.DEBUG
         if args.verbose > 1:
@@ -112,7 +111,7 @@ def main():
     download_parameters = setup_download(args)
     print('Downloading %s from %s(%s)' % (download_parameters['registry_type'], download_parameters['year'], download_parameters['registry_nr']))
 
-    if args.full_resolution is False:
+    if not args.full_resolution:
         write_link(download_parameters)
 
     for i in range(download_parameters['first'], download_parameters['last'] + 1, download_parameters['step']):
@@ -128,7 +127,7 @@ def main():
             sys.exit(1)
         logging.info('Parsing the page.')
         tree = html.fromstring(page.content)
-        if args.full_resolution is True:
+        if args.full_resolution:
             img = tree.xpath('//a[contains(@class, "cloud-zoom")]/@href')
             img_url = img[-1]
         else:
@@ -139,7 +138,7 @@ def main():
         
         logging.info('Downloading the image.')
         img_file = urlopen(img_url)
-        if args.test_run is False:
+        if not args.test_run:
             logging.info('Writing the image on disk')
             if not os.path.exists(os.path.dirname(current_file)):
                 try:
