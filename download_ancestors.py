@@ -79,7 +79,7 @@ def setup_download(args):
     logging.debug('File prefix is {}.'.format(parameters['prefix']))
 
     if args.inverse_order:
-        parametersons['step'] = -1
+        parameters['step'] = -1
         parameters['first'] = url_info['last']
         parameters['last'] = 1
     else:
