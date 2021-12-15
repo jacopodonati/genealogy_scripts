@@ -1,4 +1,4 @@
-lxml==4.6.3
+lxml==4.6.5
 requests==2.21.0
 tqdm==4.62.3
-Pillow=8.3.2
+Pillow==8.3.2
